@@ -4,6 +4,10 @@ A React single-page app for browsing photos with pagination, search, and detail 
 
 This project uses JSONPlaceholder as the data source and generates image URLs using Picsum so the UI can display real photos.
 
+## Live demo
+
+https://ile83.github.io/photo-browser/
+
 ## Features
 
 - Browse paginated photos (24 items per page)
