@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   HashRouter,
   Link,
@@ -436,12 +436,15 @@ function HomePage() {
   // Update URL query params.
   // Example:
   // ?page=2&q=accusamus
-  function updateParams(nextPage, nextFilter) {
+const updateParams = useCallback(
+  (nextPage, nextFilter) => {
     const params = new URLSearchParams();
     if (nextPage > 1) params.set("page", String(nextPage));
     if (nextFilter.trim()) params.set("q", nextFilter.trim());
     setSearchParams(params);
-  }
+  },
+  [setSearchParams]
+);
 
   // If current page becomes invalid after filtering,
   // immediately push the corrected page into the URL.
@@ -449,7 +452,7 @@ function HomePage() {
     if (page !== safePage) {
       updateParams(safePage, filter);
     }
-  }, [page, safePage, filter]);
+  }, [page, safePage, filter, updateParams]);
 
   // Search button / form submit handler.
   // Resets page back to 1 whenever a new search is performed.
@@ -566,7 +569,7 @@ function HomePage() {
 }
 
 // Reusable metadata card for the detail page sidebar.
-function MetadataCard({ title, icon: Icon, children }) {
+function MetadataCard({ title, icon, children }) {
   return (
     <Card>
       <div style={{ padding: 20 }}>
@@ -579,7 +582,7 @@ function MetadataCard({ title, icon: Icon, children }) {
             marginBottom: 14,
           }}
         >
-          <Icon size={16} />
+          {React.createElement(icon, { size: 16 })}
           {title}
         </div>
         <div style={{ display: "grid", gap: 8, fontSize: 14, color: "#334155" }}>{children}</div>

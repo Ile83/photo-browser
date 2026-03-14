@@ -11,7 +11,7 @@ https://ile83.github.io/photo-browser/
 ## Features
 
 - Browse paginated photos (24 items per page)
-- Filter photos on the current page by title
+- Filter photos from whole dataset
 - Open a dedicated photo detail page
 - View related photos from the same album
 - View album and user metadata for each photo
