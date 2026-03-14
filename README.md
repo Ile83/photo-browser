@@ -96,6 +96,28 @@ npm run build
 npm run preview
 ```
 
+## Future Development Ideas
+
+### Now (highest impact / lowest risk)
+
+- **Performance baseline:** Stop loading the entire dataset on first render by introducing pagination-aware fetching and basic caching.
+- **Resilience UX:** Add a clear error state and one-click retry for failed requests.
+- **Test coverage on core flows:** Add unit tests for utility logic and integration tests for gallery -> search -> detail.
+
+### Next (product quality and scale)
+
+- **Search quality:** Add debounced input and richer filters (album, user) to reduce noise in results.
+- **Image delivery improvements:** Expand lazy loading, add skeleton placeholders, and prefetch likely next-view images.
+- **State architecture:** Move data fetching/state concerns into a dedicated layer (for example React Query) to simplify maintenance.
+
+### Later (optimization and long-term maturity)
+
+- **Accessibility hardening:** Improve keyboard flow, ARIA semantics, and contrast checks; verify screen reader behavior.
+- **Mobile polish:** Fine-tune spacing, typography scaling, and touch ergonomics on smaller screens.
+- **Data-informed prioritization:** Add lightweight analytics (search usage, opened photos) to guide roadmap decisions.
+- **Engineering quality gates:** Add CI checks for lint, tests, and production build on pull requests.
+
+
 ## License
 
 This project is provided as-is for learning and experimentation.
