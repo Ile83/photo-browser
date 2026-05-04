@@ -17,34 +17,8 @@ import {
   ExternalLink,
   RefreshCcw,
 } from "lucide-react";
-
-// Base API URL for JSONPlaceholder.
-// We fetch photos, albums, and users from this API.
-const API_BASE = "https://jsonplaceholder.typicode.com";
-
-// Number of photos shown per page in the gallery.
-const PAGE_SIZE = 24;
-
-// Small helper for fetch requests that return JSON.
-// Throws an error if the request was not successful.
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-  return response.json();
-}
-
-// JSONPlaceholder photo URLs are not ideal for real display images,
-// so we generate thumbnail images from Picsum using the photo id.
-function picsumThumbnail(id) {
-  return `https://picsum.photos/id/${(id % 1000) + 1}/300/300`;
-}
-
-// Larger image version used on the detail page.
-function picsumLarge(id) {
-  return `https://picsum.photos/id/${(id % 1000) + 1}/1200/800`;
-}
+import { usePhotoGallery } from "./hooks/usePhotoGallery";
+import { usePhotoDetail } from "./hooks/usePhotoDetail";
 
 // Shared layout wrapper used by both the home page and detail page.
 // This keeps the header and overall page styling consistent.
@@ -261,7 +235,7 @@ function PhotoGridCard({ photo }) {
       <Card style={{ overflow: "hidden", height: "100%" }}>
         <div style={{ aspectRatio: "1 / 1", overflow: "hidden", background: "#f1f5f9" }}>
           <img
-            src={picsumThumbnail(photo.id)}
+            src={photo.thumbnailUrl}
             alt={photo.title}
             loading="lazy"
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
@@ -344,9 +318,8 @@ function Pagination({ page, totalPages, onPageChange }) {
 // Main gallery page.
 //
 // Important behavior:
-// - loads the whole dataset once
-// - filters the whole dataset by title
-// - paginates AFTER filtering
+// - fetches one gallery page at a time by default
+// - falls back to a cached full dataset for whole-gallery title filtering
 // - keeps page/search state in the URL
 function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -356,95 +329,30 @@ function HomePage() {
   const page = Math.max(Number(searchParams.get("page") || 1), 1);
   const filter = searchParams.get("q") || "";
 
-  // allPhotos stores the full fetched dataset.
-  const [allPhotos, setAllPhotos] = useState([]);
-
-  // Standard loading + error states.
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   // searchInput is controlled by the text input.
   // It stays in sync with the URL filter.
   const [searchInput, setSearchInput] = useState(filter);
+
+  const { photos, totalCount, totalPages, safePage, loading, error, datasetCount } =
+    usePhotoGallery(page, filter);
 
   // Keep input field synced if the URL changes.
   useEffect(() => {
     setSearchInput(filter);
   }, [filter]);
 
-  // Fetch all photos once when the page loads.
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPhotos() {
-      try {
-        setLoading(true);
-        setError("");
-
-        const data = await fetchJson(`${API_BASE}/photos`);
-
-        if (!cancelled) {
-          const normalized = data.map((item) => ({
-            ...item,
-            thumbnailUrl: picsumThumbnail(item.id),
-            url: picsumLarge(item.id),
-          }));
-
-          setAllPhotos(normalized);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadPhotos();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Filter the entire dataset by title.
-  // This is case-insensitive.
-  const filteredPhotos = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return allPhotos;
-    return allPhotos.filter((photo) => photo.title.toLowerCase().includes(q));
-  }, [allPhotos, filter]);
-
-  // Pagination values are based on the FILTERED dataset.
-  const totalCount = filteredPhotos.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-
-  // If the user is on page 5 and a search leaves only 1 page,
-  // we clamp the current page to a safe valid page.
-  const safePage = Math.min(page, totalPages);
-
-  // Slice the filtered dataset into the current visible page.
-  const paginatedPhotos = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    const end = start + PAGE_SIZE;
-    return filteredPhotos.slice(start, end);
-  }, [filteredPhotos, safePage]);
-
   // Update URL query params.
   // Example:
   // ?page=2&q=accusamus
-const updateParams = useCallback(
-  (nextPage, nextFilter) => {
-    const params = new URLSearchParams();
-    if (nextPage > 1) params.set("page", String(nextPage));
-    if (nextFilter.trim()) params.set("q", nextFilter.trim());
-    setSearchParams(params);
-  },
-  [setSearchParams]
-);
+  const updateParams = useCallback(
+    (nextPage, nextFilter) => {
+      const params = new URLSearchParams();
+      if (nextPage > 1) params.set("page", String(nextPage));
+      if (nextFilter.trim()) params.set("q", nextFilter.trim());
+      setSearchParams(params);
+    },
+    [setSearchParams]
+  );
 
   // If current page becomes invalid after filtering,
   // immediately push the corrected page into the URL.
@@ -527,9 +435,9 @@ const updateParams = useCallback(
         }}
       >
         <Badge>Page {safePage}</Badge>
-        <Badge>{paginatedPhotos.length} shown</Badge>
-        <span>Matched in dataset: {filteredPhotos.length} photos</span>
-        <span>Total dataset: {allPhotos.length} photos</span>
+        <Badge>{photos.length} shown</Badge>
+        <span>Matched in dataset: {totalCount} photos</span>
+        <span>Total dataset: {datasetCount} photos</span>
       </section>
 
       {loading ? <LoadingGrid /> : null}
@@ -544,12 +452,12 @@ const updateParams = useCallback(
               gap: 16,
             }}
           >
-            {paginatedPhotos.map((photo) => (
+            {photos.map((photo) => (
               <PhotoGridCard key={photo.id} photo={photo} />
             ))}
           </div>
 
-          {filteredPhotos.length === 0 ? (
+          {totalCount === 0 ? (
             <Card style={{ marginTop: 24 }}>
               <div style={{ padding: 32, textAlign: "center", color: "#475569" }}>
                 No photos matched this filter in the dataset.
@@ -600,70 +508,7 @@ function MetadataCard({ title, icon, children }) {
 // 4. load a few more photos from the same album
 function PhotoDetailPage() {
   const { photoId } = useParams();
-
-  const [photo, setPhoto] = useState(null);
-  const [album, setAlbum] = useState(null);
-  const [user, setUser] = useState(null);
-  const [albumPhotos, setAlbumPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadDetails() {
-      try {
-        setLoading(true);
-        setError("");
-
-        // Load the main selected photo.
-        const photoData = await fetchJson(`${API_BASE}/photos/${photoId}`);
-        const normalizedPhoto = {
-          ...photoData,
-          thumbnailUrl: picsumThumbnail(photoData.id),
-          url: picsumLarge(photoData.id),
-        };
-
-        // Load album for the photo.
-        const albumData = await fetchJson(`${API_BASE}/albums/${photoData.albumId}`);
-
-        // Load user who owns the album.
-        const userData = await fetchJson(`${API_BASE}/users/${albumData.userId}`);
-
-        // Load a few more photos from the same album.
-        const albumPhotoData = await fetchJson(
-          `${API_BASE}/photos?albumId=${photoData.albumId}&_limit=8`
-        );
-
-        if (!cancelled) {
-          setPhoto(normalizedPhoto);
-          setAlbum(albumData);
-          setUser(userData);
-          setAlbumPhotos(
-            albumPhotoData.map((item) => ({
-              ...item,
-              thumbnailUrl: picsumThumbnail(item.id),
-              url: picsumLarge(item.id),
-            }))
-          );
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadDetails();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [photoId]);
+  const { photo, album, user, albumPhotos, loading, error } = usePhotoDetail(photoId);
 
   return (
     <AppShell>

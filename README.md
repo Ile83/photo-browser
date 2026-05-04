@@ -11,6 +11,7 @@ https://ile83.github.io/photo-browser/
 ## Features
 
 - Browse paginated photos (24 items per page)
+- Fetch gallery pages on demand with in-memory caching
 - Filter photos from whole dataset
 - Open a dedicated photo detail page
 - View related photos from the same album
@@ -79,14 +80,26 @@ Example:
 
 Note: JSONPlaceholder photo records include placeholder URL fields. This app maps photo IDs to Picsum image URLs for thumbnails and larger previews.
 
+## Data Fetching Strategy
+
+- The default gallery view fetches only the current page of photos and caches visited pages in memory.
+- Title filtering still searches across the full 5,000-photo dataset, so the app falls back to one cached full-dataset fetch the first time a filter is used.
+- The detail page reuses cached photo, album, user, and album-photo requests when you open related photos.
+
 ## Project Structure
 
 ```text
 src/
-	App.jsx       Main app, routing, pages, and data fetching
-	main.jsx      React app entry point
-	index.css     Global styles
-	App.css       Additional styles
+	App.jsx                  Main app, routes, and presentational components
+	api/
+		jsonPlaceholder.js   API constants and fetch helper
+		photos.js            Photo data access, normalization, and caching
+	hooks/
+		usePhotoGallery.js   Gallery loading and page/filter state
+		usePhotoDetail.js    Detail-page loading state
+	main.jsx                 React app entry point
+	index.css                Global styles
+	App.css                  Additional styles
 ```
 
 ## Production Build
@@ -100,7 +113,7 @@ npm run preview
 
 ### Now (highest impact / lowest risk)
 
-- **Performance baseline:** Stop loading the entire dataset on first render by introducing pagination-aware fetching and basic caching.
+- **Search performance:** Replace the filter fallback full-dataset fetch with a backend or search-ready API that can handle substring queries server-side.
 - **Resilience UX:** Add a clear error state and one-click retry for failed requests.
 - **Test coverage on core flows:** Add unit tests for utility logic and integration tests for gallery -> search -> detail.
 
