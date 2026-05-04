@@ -18,13 +18,20 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import {
-  ArrowLeft,
-  Search,
-  Image as ImageIcon,
-  User,
   Album,
+  Aperture,
+  ArrowLeft,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
+  Grid3X3,
+  Image as ImageIcon,
+  Mail,
+  Phone,
   RefreshCcw,
+  Search,
+  User,
   type LucideIcon,
 } from "lucide-react";
 import { usePhotoGallery } from "./hooks/usePhotoGallery";
@@ -36,14 +43,18 @@ interface WithChildren {
 }
 
 interface CardProps extends WithChildren {
+  className?: string;
   style?: CSSProperties;
 }
 
 interface ButtonProps extends WithChildren {
-  onClick?: () => void;
-  disabled?: boolean;
-  style?: CSSProperties;
-  type?: ButtonHTMLAttributes<HTMLButtonElement>["type"];
+  variant?: "primary" | "secondary" | "ghost";
+}
+
+type AppButtonProps = ButtonProps & ButtonHTMLAttributes<HTMLButtonElement>;
+
+interface BadgeProps extends WithChildren {
+  tone?: "light" | "dark" | "accent";
 }
 
 interface ErrorStateProps {
@@ -54,6 +65,7 @@ interface ErrorStateProps {
 
 interface PhotoGridCardProps {
   photo: Photo;
+  index: number;
 }
 
 interface PaginationProps {
@@ -67,260 +79,168 @@ interface MetadataCardProps extends WithChildren {
   icon: LucideIcon;
 }
 
-// Shared layout wrapper used by both the home page and detail page.
-// This keeps the header and overall page styling consistent.
+const HERO_FRAMES = [
+  { id: 1018, label: "Northern ridge" },
+  { id: 1039, label: "Coastal dusk" },
+  { id: 1043, label: "Amber trail" },
+  { id: 1067, label: "Glasshouse" },
+];
+
+function classNames(...names: Array<string | false | undefined>) {
+  return names.filter(Boolean).join(" ");
+}
+
 function AppShell({ children }: WithChildren) {
   return (
-    <div style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a" }}>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          borderBottom: "1px solid #e2e8f0",
-          background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "16px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          {/* App logo + title. Clicking this returns to the home page. */}
-          <Link
-            to="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <div
-              style={{
-                background: "#0f172a",
-                color: "white",
-                padding: 10,
-                borderRadius: 16,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <ImageIcon size={20} />
-            </div>
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>Photo Browser</div>
-              <div style={{ fontSize: 14, color: "#64748b" }}>
-                React SPA with JSONPlaceholder
-              </div>
-            </div>
+    <div className="app-shell">
+      <header className="site-header">
+        <div className="site-header__inner">
+          <Link to="/" className="brand-link" aria-label="Photo Browser home">
+            <span className="brand-mark">
+              <Aperture size={23} />
+            </span>
+            <span>
+              <span className="brand-name">Photo Browser</span>
+              <span className="brand-subtitle">5,000 frame catalog</span>
+            </span>
           </Link>
 
-          {/* External link to the API source used by the app. */}
           <a
+            className="api-link"
             href="https://jsonplaceholder.typicode.com/photos"
             target="_blank"
             rel="noreferrer"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: "#475569",
-              textDecoration: "none",
-              fontSize: 14,
-            }}
           >
-            API Docs <ExternalLink size={16} />
+            <span>API</span>
+            <ExternalLink size={16} />
           </a>
         </div>
       </header>
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>{children}</main>
+      <main className="page-frame">{children}</main>
     </div>
   );
 }
 
-// Reusable card component for consistent box styling.
-function Card({ children, style = {} }: CardProps) {
+function Card({ children, className, style }: CardProps) {
   return (
-    <div
-      style={{
-        background: "white",
-        border: "1px solid #e2e8f0",
-        borderRadius: 24,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        ...style,
-      }}
-    >
+    <div className={classNames("surface-card", className)} style={style}>
       {children}
     </div>
   );
 }
 
-// Reusable button component.
-// Used throughout the app for actions like Search, Retry, paging, etc.
 function Button({
   children,
-  onClick,
-  disabled,
-  style = {},
+  className,
   type = "button",
-}: ButtonProps) {
+  variant = "primary",
+  ...buttonProps
+}: AppButtonProps) {
   return (
     <button
       type={type}
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        padding: "10px 14px",
-        borderRadius: 12,
-        border: "1px solid #cbd5e1",
-        background: disabled ? "#e2e8f0" : "black",
-        color: disabled ? "#64748b" : "white",
-        cursor: disabled ? "not-allowed" : "pointer",
-        fontWeight: 600,
-        ...style,
-      }}
+      className={classNames("button", `button--${variant}`, className)}
+      {...buttonProps}
     >
       {children}
     </button>
   );
 }
 
-// Small badge UI used for IDs, page numbers, counts, etc.
-function Badge({ children }: WithChildren) {
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        padding: "4px 10px",
-        borderRadius: 999,
-        border: "1px solid #cbd5e1",
-        fontSize: 12,
-        background: "#f8fafc",
-      }}
-    >
-      {children}
-    </span>
-  );
+function Badge({ children, tone = "light" }: BadgeProps) {
+  return <span className={classNames("badge", `badge--${tone}`)}>{children}</span>;
 }
 
-// Reusable error state with optional retry button.
 function ErrorState({
   title = "Something went wrong",
   message,
   onRetry,
 }: ErrorStateProps) {
   return (
-    <Card style={{ background: "#fef2f2", borderColor: "#fecaca" }}>
-      <div style={{ padding: 24 }}>
-        <h2 style={{ margin: 0, color: "#7f1d1d" }}>{title}</h2>
-        <p style={{ color: "#991b1b" }}>{message}</p>
-        {onRetry && (
-          <Button
-            onClick={onRetry}
-            style={{ display: "inline-flex", gap: 8, alignItems: "center" }}
-          >
-            <RefreshCcw size={16} />
-            Retry
-          </Button>
-        )}
+    <Card className="error-state">
+      <div className="error-state__icon">
+        <RefreshCcw size={20} />
       </div>
+      <div>
+        <h2>{title}</h2>
+        <p>{message}</p>
+      </div>
+      {onRetry ? (
+        <Button onClick={onRetry} className="button--inline">
+          <RefreshCcw size={16} />
+          Retry
+        </Button>
+      ) : null}
     </Card>
   );
 }
 
-// Simple skeleton loading grid shown while the gallery is loading.
 function LoadingGrid() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-        gap: 16,
-      }}
-    >
+    <div className="gallery-grid" aria-label="Loading photos">
       {Array.from({ length: 12 }).map((_, index) => (
-        <div
+        <Card
           key={index}
-          style={{
-            borderRadius: 24,
-            background: "white",
-            border: "1px solid #e2e8f0",
-            overflow: "hidden",
-          }}
+          className={classNames(
+            "photo-card",
+            "photo-card--loading",
+            index === 0 || index === 7 ? "photo-card--feature" : undefined,
+          )}
         >
-          <div style={{ aspectRatio: "1 / 1", background: "#e2e8f0" }} />
-          <div style={{ padding: 12 }}>
-            <div
-              style={{
-                height: 16,
-                background: "#e2e8f0",
-                borderRadius: 8,
-                marginBottom: 8,
-              }}
-            />
-            <div
-              style={{
-                height: 12,
-                width: "70%",
-                background: "#e2e8f0",
-                borderRadius: 8,
-              }}
-            />
+          <div className="skeleton skeleton--media" />
+          <div className="photo-card__body">
+            <span className="skeleton skeleton--line" />
+            <span className="skeleton skeleton--line skeleton--short" />
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
 }
 
-// Single photo card used in the gallery grid.
-// Entire card is clickable and navigates to the detail page.
-function PhotoGridCard({ photo }: PhotoGridCardProps) {
+function HeroCollage() {
   return (
-    <Link to={`/photos/${photo.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-      <Card style={{ overflow: "hidden", height: "100%" }}>
-        <div style={{ aspectRatio: "1 / 1", overflow: "hidden", background: "#f1f5f9" }}>
+    <div className="hero-collage" aria-label="Featured photographs">
+      {HERO_FRAMES.map((frame, index) => (
+        <figure key={frame.id} className={classNames("hero-frame", `hero-frame--${index + 1}`)}>
           <img
-            src={photo.thumbnailUrl}
-            alt={photo.title}
-            loading="lazy"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            src={`https://picsum.photos/id/${frame.id}/900/700`}
+            alt={frame.label}
+            loading={index === 0 ? "eager" : "lazy"}
           />
-        </div>
-        <div style={{ padding: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 8,
-              flexWrap: "wrap",
-              marginBottom: 8,
-            }}
-          >
-            <Badge>#{photo.id}</Badge>
-            <Badge>Album {photo.albumId}</Badge>
+          <figcaption>{frame.label}</figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
+function PhotoGridCard({ photo, index }: PhotoGridCardProps) {
+  const isFeatured = index === 0 || index === 7;
+
+  return (
+    <Link
+      to={`/photos/${photo.id}`}
+      className={classNames("photo-card-link", isFeatured && "photo-card--feature")}
+    >
+      <Card className="photo-card">
+        <div className="photo-card__media">
+          <img src={photo.thumbnailUrl} alt={photo.title} loading="lazy" />
+          <div className="photo-card__overlay" />
+          <div className="photo-card__badges">
+            <Badge tone="dark">#{photo.id}</Badge>
+            <Badge tone="dark">Album {photo.albumId}</Badge>
           </div>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{photo.title}</p>
+        </div>
+        <div className="photo-card__body">
+          <p>{photo.title}</p>
         </div>
       </Card>
     </Link>
   );
 }
 
-// Pagination component.
-// Displays previous/next buttons and a small set of page numbers
-// around the current page.
 function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   const pageNumbers = useMemo(() => {
     const pages = new Set([1, totalPages, page - 1, page, page + 1, page - 2, page + 2]);
@@ -330,77 +250,60 @@ function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <div
-      style={{
-        marginTop: 32,
-        display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        gap: 8,
-      }}
-    >
-      <Button disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+    <nav className="pagination" aria-label="Gallery pagination">
+      <Button variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+        <ChevronLeft size={17} />
         Previous
       </Button>
 
-      {pageNumbers.map((pageNumber, index) => {
-        const previous = pageNumbers[index - 1];
-        const showEllipsis = previous !== undefined && pageNumber - previous > 1;
+      <div className="pagination__pages">
+        {pageNumbers.map((pageNumber, index) => {
+          const previous = pageNumbers[index - 1];
+          const showEllipsis = previous !== undefined && pageNumber - previous > 1;
 
-        return (
-          <React.Fragment key={pageNumber}>
-            {showEllipsis ? <span style={{ padding: "10px 4px" }}>…</span> : null}
-            <Button
-              onClick={() => onPageChange(pageNumber)}
-              style={{
-                background: pageNumber === page ? "#0f172a" : "white",
-                color: pageNumber === page ? "white" : "inherit",
-                borderColor: pageNumber === page ? "#0f172a" : "#cbd5e1",
-                minWidth: 42,
-              }}
-            >
-              {pageNumber}
-            </Button>
-          </React.Fragment>
-        );
-      })}
+          return (
+            <React.Fragment key={pageNumber}>
+              {showEllipsis ? <span className="pagination__ellipsis">...</span> : null}
+              <Button
+                variant={pageNumber === page ? "primary" : "ghost"}
+                onClick={() => onPageChange(pageNumber)}
+                className="pagination__number"
+                aria-current={pageNumber === page ? "page" : undefined}
+              >
+                {pageNumber}
+              </Button>
+            </React.Fragment>
+          );
+        })}
+      </div>
 
-      <Button disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+      <Button
+        variant="secondary"
+        disabled={page >= totalPages}
+        onClick={() => onPageChange(page + 1)}
+      >
         Next
+        <ChevronRight size={17} />
       </Button>
-    </div>
+    </nav>
   );
 }
 
-// Main gallery page.
-//
-// Important behavior:
-// - fetches one gallery page at a time by default
-// - falls back to a cached full dataset for whole-gallery title filtering
-// - keeps page/search state in the URL
 function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Read current page and search filter from the URL.
   const page = Math.max(Number(searchParams.get("page") || 1), 1);
   const filter = searchParams.get("q") || "";
-
-  // searchInput is controlled by the text input.
-  // It stays in sync with the URL filter.
   const [searchInput, setSearchInput] = useState(filter);
 
   const { photos, totalCount, totalPages, safePage, loading, error, datasetCount } =
     usePhotoGallery(page, filter);
 
-  // Keep input field synced if the URL changes.
   useEffect(() => {
     setSearchInput(filter);
   }, [filter]);
 
-  // Update URL query params.
-  // Example:
-  // ?page=2&q=accusamus
   const updateParams = useCallback(
     (nextPage: number, nextFilter: string) => {
       const params = new URLSearchParams();
@@ -408,19 +311,15 @@ function HomePage() {
       if (nextFilter.trim()) params.set("q", nextFilter.trim());
       setSearchParams(params);
     },
-    [setSearchParams]
+    [setSearchParams],
   );
 
-  // If current page becomes invalid after filtering,
-  // immediately push the corrected page into the URL.
   useEffect(() => {
-    if (page !== safePage) {
+    if (!loading && page !== safePage) {
       updateParams(safePage, filter);
     }
-  }, [page, safePage, filter, updateParams]);
+  }, [page, safePage, filter, loading, updateParams]);
 
-  // Search button / form submit handler.
-  // Resets page back to 1 whenever a new search is performed.
   function onSearchSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     updateParams(1, searchInput);
@@ -428,73 +327,62 @@ function HomePage() {
 
   return (
     <AppShell>
-      <section
-        style={{
-          marginBottom: 32,
-          display: "grid",
-          gap: 20,
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          alignItems: "end",
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: 40, margin: 0 }}>Browse 5,000 photos</h1>
-          <p style={{ color: "#475569", lineHeight: 1.7 }}>
-            A scalable single-page app built around JSONPlaceholder’s /photos endpoint,
-            with shareable routes, pagination, search, and a detailed single-photo page.
-          </p>
-        </div>
+      <section className="gallery-hero">
+        <div className="gallery-hero__content">
+          <div className="eyebrow">
+            <Grid3X3 size={16} />
+            JSONPlaceholder Collection
+          </div>
+          <h1>Photo Browser</h1>
 
-        <Card>
-          <div style={{ padding: 16 }}>
-            <form onSubmit={onSearchSubmit} style={{ display: "flex", gap: 12 }}>
-              <div style={{ position: "relative", flex: 1 }}>
-                <Search
-                  size={16}
-                  style={{
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#94a3b8",
-                  }}
-                />
+          <form onSubmit={onSearchSubmit} className="search-panel" aria-label="Search photos">
+            <label htmlFor="photo-search">Filter titles</label>
+            <div className="search-panel__row">
+              <div className="search-input">
+                <Search size={18} aria-hidden="true" />
                 <input
+                  id="photo-search"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Filter all photos by title"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px 10px 34px",
-                    borderRadius: 12,
-                    border: "1px solid #cbd5e1",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
+                  placeholder="Try accusamus, officia, skyline..."
                 />
               </div>
-              <Button type="submit">Search</Button>
-            </form>
+              <Button type="submit" className="button--search">
+                <Search size={17} />
+                Search
+              </Button>
+            </div>
+          </form>
+
+          <div className="metric-strip" aria-label="Gallery metrics">
+            <div>
+              <strong>{datasetCount.toLocaleString()}</strong>
+              <span>photos</span>
+            </div>
+            <div>
+              <strong>{totalCount.toLocaleString()}</strong>
+              <span>matches</span>
+            </div>
+            <div>
+              <strong>{safePage}</strong>
+              <span>page</span>
+            </div>
           </div>
-        </Card>
+        </div>
+
+        <HeroCollage />
       </section>
 
-      {/* Small info row showing page + matching result counts */}
-      <section
-        style={{
-          marginBottom: 20,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 12,
-          alignItems: "center",
-          color: "#475569",
-          fontSize: 14,
-        }}
-      >
-        <Badge>Page {safePage}</Badge>
-        <Badge>{photos.length} shown</Badge>
-        <span>Matched in dataset: {totalCount} photos</span>
-        <span>Total dataset: {datasetCount} photos</span>
+      <section className="gallery-toolbar">
+        <div className="gallery-toolbar__copy">
+          <span className="section-kicker">Current frame set</span>
+          <h2>{filter ? `Results for "${filter}"` : "Latest photos"}</h2>
+        </div>
+        <div className="gallery-toolbar__meta">
+          <Badge tone="accent">{photos.length} shown</Badge>
+          <Badge>{totalCount.toLocaleString()} matched</Badge>
+          <Badge>{datasetCount.toLocaleString()} total</Badge>
+        </div>
       </section>
 
       {loading ? <LoadingGrid /> : null}
@@ -502,23 +390,17 @@ function HomePage() {
 
       {!loading && !error ? (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 16,
-            }}
-          >
-            {photos.map((photo) => (
-              <PhotoGridCard key={photo.id} photo={photo} />
+          <div className="gallery-grid">
+            {photos.map((photo, index) => (
+              <PhotoGridCard key={photo.id} photo={photo} index={index} />
             ))}
           </div>
 
           {totalCount === 0 ? (
-            <Card style={{ marginTop: 24 }}>
-              <div style={{ padding: 32, textAlign: "center", color: "#475569" }}>
-                No photos matched this filter in the dataset.
-              </div>
+            <Card className="empty-state">
+              <ImageIcon size={32} />
+              <h2>No matching photos</h2>
+              <p>Adjust the title filter and the catalog will refresh.</p>
             </Card>
           ) : null}
 
@@ -533,64 +415,56 @@ function HomePage() {
   );
 }
 
-// Reusable metadata card for the detail page sidebar.
 function MetadataCard({ title, icon, children }: MetadataCardProps) {
   return (
-    <Card>
-      <div style={{ padding: 20 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontWeight: 700,
-            marginBottom: 14,
-          }}
-        >
-          {React.createElement(icon, { size: 16 })}
-          {title}
-        </div>
-        <div style={{ display: "grid", gap: 8, fontSize: 14, color: "#334155" }}>{children}</div>
+    <Card className="metadata-card">
+      <div className="metadata-card__title">
+        {React.createElement(icon, { size: 17 })}
+        {title}
       </div>
+      <div className="metadata-card__content">{children}</div>
     </Card>
   );
 }
 
-// Photo detail page.
-//
-// Fetch sequence:
-// 1. load selected photo
-// 2. load its album
-// 3. load the album owner (user)
-// 4. load a few more photos from the same album
+function MetadataRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: ReactNode;
+  icon?: LucideIcon;
+}) {
+  return (
+    <div className="metadata-row">
+      {icon ? React.createElement(icon, { size: 15 }) : <span aria-hidden="true" />}
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function PhotoDetailPage() {
   const { photoId } = useParams();
   const { photo, album, user, albumPhotos, loading, error } = usePhotoDetail(photoId);
 
   return (
     <AppShell>
-      <div style={{ marginBottom: 24 }}>
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <Button style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <ArrowLeft size={16} />
-            Back to gallery
-          </Button>
+      <div className="detail-nav">
+        <Link to="/" className="button button--secondary">
+          <ArrowLeft size={17} />
+          Back to gallery
         </Link>
       </div>
 
-      {/* Skeleton loading state */}
       {loading ? (
-        <div
-          style={{
-            display: "grid",
-            gap: 24,
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          }}
-        >
-          <div style={{ aspectRatio: "4 / 3", background: "#e2e8f0", borderRadius: 24 }} />
-          <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ height: 180, background: "#e2e8f0", borderRadius: 24 }} />
-            <div style={{ height: 180, background: "#e2e8f0", borderRadius: 24 }} />
+        <div className="detail-grid">
+          <div className="detail-photo skeleton" />
+          <div className="detail-sidebar">
+            <div className="skeleton skeleton--panel" />
+            <div className="skeleton skeleton--panel" />
+            <div className="skeleton skeleton--panel" />
           </div>
         </div>
       ) : null}
@@ -598,103 +472,66 @@ function PhotoDetailPage() {
       {!loading && error ? <ErrorState title="Unable to load photo" message={error} /> : null}
 
       {!loading && !error && photo ? (
-        <div
-          style={{
-            display: "grid",
-            gap: 24,
-            gridTemplateColumns: "minmax(0, 1.5fr) minmax(280px, 0.9fr)",
-          }}
-        >
-          <div style={{ display: "grid", gap: 24 }}>
-            {/* Main large photo */}
-            <Card style={{ overflow: "hidden", borderRadius: 32 }}>
-              <div style={{ aspectRatio: "4 / 3", background: "#f1f5f9" }}>
-                <img
-                  src={photo.url}
-                  alt={photo.title}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
-              </div>
-            </Card>
+        <div className="detail-grid">
+          <article className="detail-main">
+            <figure className="detail-photo">
+              <img src={photo.url} alt={photo.title} />
+              <figcaption>
+                <Badge tone="dark">Photo #{photo.id}</Badge>
+                <Badge tone="dark">Album {photo.albumId}</Badge>
+              </figcaption>
+            </figure>
 
-            {/* Main photo info */}
-            <Card>
-              <div style={{ padding: 24 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                  <Badge>Photo #{photo.id}</Badge>
-                  <Badge>Album {photo.albumId}</Badge>
+            <div className="detail-heading">
+              <span className="section-kicker">Selected frame</span>
+              <h1>{photo.title}</h1>
+            </div>
+
+            <section className="related-section">
+              <div className="gallery-toolbar">
+                <div className="gallery-toolbar__copy">
+                  <span className="section-kicker">Same album</span>
+                  <h2>More frames</h2>
                 </div>
-
-                <h1 style={{ color: "#0f172a", fontSize: 32, marginTop: 0 }}>{photo.title}</h1>
-                <p style={{ color: "#475569", lineHeight: 1.7 }}>
-                  This detail view is directly shareable, so opening /photos/{photo.id} loads the same item with related album and user context.
-                </p>
               </div>
-            </Card>
 
-            {/* Related photos from same album */}
-            <div>
-              <h2 style={{ color: "#0f172a" }}>More from this album</h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                  gap: 16,
-                }}
-              >
+              <div className="related-grid">
                 {albumPhotos.map((item) => (
                   <Link
                     key={item.id}
                     to={`/photos/${item.id}`}
-                    style={{ textDecoration: "none", color: "inherit" }}
+                    className="related-card"
                   >
-                    <Card style={{ overflow: "hidden" }}>
-                      <div style={{ aspectRatio: "1 / 1", overflow: "hidden" }}>
-                        <img
-                          src={item.thumbnailUrl}
-                          alt={item.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      </div>
-                      <div style={{ padding: 12 }}>
-                        <p style={{ margin: 0, fontSize: 12 }}>{item.title}</p>
-                      </div>
-                    </Card>
+                    <img src={item.thumbnailUrl} alt={item.title} loading="lazy" />
+                    <span>{item.title}</span>
                   </Link>
                 ))}
               </div>
-            </div>
-          </div>
+            </section>
+          </article>
 
-          {/* Sidebar metadata */}
-          <aside style={{ display: "grid", gap: 16, alignSelf: "start" }}>
-            <MetadataCard title="Photo metadata" icon={ImageIcon}>
-              <div><strong>ID:</strong> {photo.id}</div>
-              <div><strong>Album ID:</strong> {photo.albumId}</div>
-              <div><strong>Shareable path:</strong> /photos/{photo.id}</div>
+          <aside className="detail-sidebar">
+            <MetadataCard title="Photo" icon={ImageIcon}>
+              <MetadataRow label="ID" value={photo.id} />
+              <MetadataRow label="Album" value={photo.albumId} />
+              <MetadataRow label="Path" value={`/photos/${photo.id}`} />
             </MetadataCard>
 
             {album ? (
               <MetadataCard title="Album" icon={Album}>
-                <div><strong>Title:</strong> {album.title}</div>
-                <div><strong>Album ID:</strong> {album.id}</div>
-                <div><strong>Owner user ID:</strong> {album.userId}</div>
+                <MetadataRow label="Title" value={album.title} />
+                <MetadataRow label="Album ID" value={album.id} />
+                <MetadataRow label="Owner ID" value={album.userId} />
               </MetadataCard>
             ) : null}
 
             {user ? (
-              <MetadataCard title="User details" icon={User}>
-                <div><strong>Name:</strong> {user.name}</div>
-                <div><strong>Username:</strong> {user.username}</div>
-                <div><strong>Email:</strong> {user.email}</div>
-                <div><strong>Phone:</strong> {user.phone}</div>
-                <div><strong>Company:</strong> {user.company?.name}</div>
-                <div><strong>Website:</strong> {user.website}</div>
+              <MetadataCard title="Owner" icon={User}>
+                <MetadataRow label="Name" value={user.name} icon={User} />
+                <MetadataRow label="Email" value={user.email} icon={Mail} />
+                <MetadataRow label="Phone" value={user.phone} icon={Phone} />
+                <MetadataRow label="Company" value={user.company?.name} icon={Building2} />
+                <MetadataRow label="Website" value={user.website} icon={ExternalLink} />
               </MetadataCard>
             ) : null}
           </aside>
@@ -704,8 +541,6 @@ function PhotoDetailPage() {
   );
 }
 
-// Root app component.
-// HashRouter is used here because it works well for GitHub Pages deployments.
 export default function App() {
   return (
     <HashRouter>

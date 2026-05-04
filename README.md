@@ -1,23 +1,25 @@
 # Photo Browser
 
-A React single-page app for browsing photos with pagination, search, and detail pages.
+A visually rich React single-page photo browser for exploring a 5,000-image catalog with pagination, title search, and shareable detail pages.
 
-This project uses JSONPlaceholder as the data source and generates image URLs using Picsum so the UI can display real photos.
+The app uses JSONPlaceholder for structured photo, album, and user data. Photo records are normalized to Picsum URLs so the gallery renders real photographic imagery instead of placeholder blocks.
 
-## Live demo
+## Live Demo
 
 https://ile83.github.io/photo-browser/
 
-## Features
+## Highlights
 
-- Browse paginated photos (24 items per page)
-- Fetch gallery pages on demand with in-memory caching
-- Filter photos from whole dataset
-- Open a dedicated photo detail page
-- View related photos from the same album
-- View album and user metadata for each photo
+- Cinematic landing view with a responsive featured-photo collage
+- Polished gallery grid with image overlays, badges, hover states, and skeleton loading
+- Paginated browsing with 24 photos per page
+- Whole-dataset title filtering with URL-backed query state
+- Dedicated photo detail pages with large preview imagery
+- Related photos from the same album
+- Album and user metadata cards
 - Shareable routes and query parameters
-- Loading and error states for API requests
+- Loading, empty, and error states for API requests
+- Responsive layout for desktop and mobile screens
 
 ## Tech Stack
 
@@ -47,12 +49,18 @@ npm install
 npm run dev
 ```
 
-Then open the local URL shown in your terminal (usually `http://localhost:5173`).
+Vite is configured with the GitHub Pages base path, so open:
+
+```text
+http://localhost:5173/photo-browser/
+```
+
+The terminal may show `127.0.0.1` instead of `localhost`; either host is fine.
 
 ## Available Scripts
 
 - `npm run dev` starts the Vite dev server
-- `npm run build` builds for production
+- `npm run build` runs TypeScript checks and builds for production
 - `npm run preview` previews the production build locally
 - `npm run lint` runs ESLint
 - `npm run typecheck` runs the TypeScript compiler without emitting files
@@ -62,15 +70,21 @@ Then open the local URL shown in your terminal (usually `http://localhost:5173`)
 - `/` home gallery with pagination and title filter
 - `/photos/:photoId` photo detail page
 
-The home page uses query parameters:
+The home page supports these query parameters:
 
-- `page` for current page number
+- `page` for the current page number
 - `q` for title filter text
 
 Example:
 
 ```text
 /?page=3&q=accusamus
+```
+
+Because this app uses `HashRouter`, deployed URLs are served under the hash path:
+
+```text
+https://ile83.github.io/photo-browser/#/photos/42
 ```
 
 ## Data Sources
@@ -80,29 +94,29 @@ Example:
 - User API: https://jsonplaceholder.typicode.com/users/:id
 - Image rendering: https://picsum.photos
 
-Note: JSONPlaceholder photo records include placeholder URL fields. This app maps photo IDs to Picsum image URLs for thumbnails and larger previews.
+JSONPlaceholder photo records include placeholder image URL fields. This app maps photo IDs to Picsum image URLs for thumbnails and large previews.
 
 ## Data Fetching Strategy
 
-- The default gallery view fetches only the current page of photos and caches visited pages in memory.
-- Title filtering still searches across the full 5,000-photo dataset, so the app falls back to one cached full-dataset fetch the first time a filter is used.
-- The detail page reuses cached photo, album, user, and album-photo requests when you open related photos.
+- The default gallery fetches only the current page and caches visited pages in memory.
+- Title filtering searches across the full 5,000-photo dataset, so the first filtered search loads and caches the full dataset.
+- Detail pages cache photo, album, user, and same-album photo requests, which keeps related-photo navigation snappy.
 
 ## Project Structure
 
 ```text
 src/
-	App.tsx                  Main app, routes, and presentational components
-	api/
-		jsonPlaceholder.ts   API constants and fetch helper
-		photos.ts            Photo data access, normalization, and caching
-	hooks/
-		usePhotoGallery.ts   Gallery loading and page/filter state
-		usePhotoDetail.ts    Detail-page loading state
-	main.tsx                 React app entry point
-	types.ts                Shared TypeScript interfaces
-	index.css                Global styles
-	App.css                  Additional styles
+  App.tsx                  Routes, page composition, and presentational components
+  api/
+    jsonPlaceholder.ts     API constants and fetch helper
+    photos.ts              Photo data access, normalization, and caching
+  hooks/
+    usePhotoGallery.ts     Gallery loading and page/filter state
+    usePhotoDetail.ts      Detail-page loading state
+  main.tsx                 React app entry point
+  types.ts                 Shared TypeScript interfaces
+  index.css                Global visual system and responsive styles
+  App.css                  Legacy starter styles, currently unused
 ```
 
 ## Production Build
@@ -112,27 +126,35 @@ npm run build
 npm run preview
 ```
 
+## Verification
+
+Useful checks before shipping changes:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
 ## Future Development Ideas
 
-### Now (highest impact / lowest risk)
+### Now
 
-- **Search performance:** Replace the filter fallback full-dataset fetch with a backend or search-ready API that can handle substring queries server-side.
-- **Resilience UX:** Add a clear error state and one-click retry for failed requests.
-- **Test coverage on core flows:** Add unit tests for utility logic and integration tests for gallery -> search -> detail.
+- Add automated UI smoke tests for gallery, search, pagination, and detail navigation.
+- Add accessibility checks for keyboard flow, landmarks, focus order, and screen reader labels.
+- Add a debounced search interaction so typing feels lighter once the full dataset is loaded.
 
-### Next (product quality and scale)
+### Next
 
-- **Search quality:** Add debounced input and richer filters (album, user) to reduce noise in results.
-- **Image delivery improvements:** Expand lazy loading, add skeleton placeholders, and prefetch likely next-view images.
-- **State architecture:** Move data fetching/state concerns into a dedicated layer (for example React Query) to simplify maintenance.
+- Add richer filters for album, user, and photo ID.
+- Prefetch adjacent pages and likely related-photo detail routes.
+- Move API state into a dedicated data layer such as TanStack Query if the app grows.
 
-### Later (optimization and long-term maturity)
+### Later
 
-- **Accessibility hardening:** Improve keyboard flow, ARIA semantics, and contrast checks; verify screen reader behavior.
-- **Mobile polish:** Fine-tune spacing, typography scaling, and touch ergonomics on smaller screens.
-- **Data-informed prioritization:** Add lightweight analytics (search usage, opened photos) to guide roadmap decisions.
-- **Engineering quality gates:** Add CI checks for lint, tests, and production build on pull requests.
-
+- Add visual regression checks for desktop and mobile layouts.
+- Add lightweight analytics for search terms and opened photos.
+- Add CI checks for lint, typecheck, build, and tests on pull requests.
 
 ## License
 
