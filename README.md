@@ -21,6 +21,7 @@ https://ile83.github.io/photo-browser/
 
 ## Tech Stack
 
+- TypeScript
 - React 19
 - React Router 7
 - Vite 8
@@ -54,6 +55,7 @@ Then open the local URL shown in your terminal (usually `http://localhost:5173`)
 - `npm run build` builds for production
 - `npm run preview` previews the production build locally
 - `npm run lint` runs ESLint
+- `npm run typecheck` runs the TypeScript compiler without emitting files
 
 ## Routes
 
@@ -90,14 +92,15 @@ Note: JSONPlaceholder photo records include placeholder URL fields. This app map
 
 ```text
 src/
-	App.jsx                  Main app, routes, and presentational components
+	App.tsx                  Main app, routes, and presentational components
 	api/
-		jsonPlaceholder.js   API constants and fetch helper
-		photos.js            Photo data access, normalization, and caching
+		jsonPlaceholder.ts   API constants and fetch helper
+		photos.ts            Photo data access, normalization, and caching
 	hooks/
-		usePhotoGallery.js   Gallery loading and page/filter state
-		usePhotoDetail.js    Detail-page loading state
-	main.jsx                 React app entry point
+		usePhotoGallery.ts   Gallery loading and page/filter state
+		usePhotoDetail.ts    Detail-page loading state
+	main.tsx                 React app entry point
+	types.ts                Shared TypeScript interfaces
 	index.css                Global styles
 	App.css                  Additional styles
 ```

@@ -1,4 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   HashRouter,
   Link,
@@ -16,13 +25,51 @@ import {
   Album,
   ExternalLink,
   RefreshCcw,
+  type LucideIcon,
 } from "lucide-react";
 import { usePhotoGallery } from "./hooks/usePhotoGallery";
 import { usePhotoDetail } from "./hooks/usePhotoDetail";
+import type { Photo } from "./types";
+
+interface WithChildren {
+  children: ReactNode;
+}
+
+interface CardProps extends WithChildren {
+  style?: CSSProperties;
+}
+
+interface ButtonProps extends WithChildren {
+  onClick?: () => void;
+  disabled?: boolean;
+  style?: CSSProperties;
+  type?: ButtonHTMLAttributes<HTMLButtonElement>["type"];
+}
+
+interface ErrorStateProps {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+}
+
+interface PhotoGridCardProps {
+  photo: Photo;
+}
+
+interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onPageChange: (nextPage: number) => void;
+}
+
+interface MetadataCardProps extends WithChildren {
+  title: string;
+  icon: LucideIcon;
+}
 
 // Shared layout wrapper used by both the home page and detail page.
 // This keeps the header and overall page styling consistent.
-function AppShell({ children }) {
+function AppShell({ children }: WithChildren) {
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", color: "#0f172a" }}>
       <header
@@ -103,7 +150,7 @@ function AppShell({ children }) {
 }
 
 // Reusable card component for consistent box styling.
-function Card({ children, style = {} }) {
+function Card({ children, style = {} }: CardProps) {
   return (
     <div
       style={{
@@ -121,7 +168,13 @@ function Card({ children, style = {} }) {
 
 // Reusable button component.
 // Used throughout the app for actions like Search, Retry, paging, etc.
-function Button({ children, onClick, disabled, style = {}, type = "button" }) {
+function Button({
+  children,
+  onClick,
+  disabled,
+  style = {},
+  type = "button",
+}: ButtonProps) {
   return (
     <button
       type={type}
@@ -144,7 +197,7 @@ function Button({ children, onClick, disabled, style = {}, type = "button" }) {
 }
 
 // Small badge UI used for IDs, page numbers, counts, etc.
-function Badge({ children }) {
+function Badge({ children }: WithChildren) {
   return (
     <span
       style={{
@@ -162,7 +215,11 @@ function Badge({ children }) {
 }
 
 // Reusable error state with optional retry button.
-function ErrorState({ title = "Something went wrong", message, onRetry }) {
+function ErrorState({
+  title = "Something went wrong",
+  message,
+  onRetry,
+}: ErrorStateProps) {
   return (
     <Card style={{ background: "#fef2f2", borderColor: "#fecaca" }}>
       <div style={{ padding: 24 }}>
@@ -229,7 +286,7 @@ function LoadingGrid() {
 
 // Single photo card used in the gallery grid.
 // Entire card is clickable and navigates to the detail page.
-function PhotoGridCard({ photo }) {
+function PhotoGridCard({ photo }: PhotoGridCardProps) {
   return (
     <Link to={`/photos/${photo.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <Card style={{ overflow: "hidden", height: "100%" }}>
@@ -264,7 +321,7 @@ function PhotoGridCard({ photo }) {
 // Pagination component.
 // Displays previous/next buttons and a small set of page numbers
 // around the current page.
-function Pagination({ page, totalPages, onPageChange }) {
+function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   const pageNumbers = useMemo(() => {
     const pages = new Set([1, totalPages, page - 1, page, page + 1, page - 2, page + 2]);
     return [...pages].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
@@ -288,7 +345,7 @@ function Pagination({ page, totalPages, onPageChange }) {
 
       {pageNumbers.map((pageNumber, index) => {
         const previous = pageNumbers[index - 1];
-        const showEllipsis = previous && pageNumber - previous > 1;
+        const showEllipsis = previous !== undefined && pageNumber - previous > 1;
 
         return (
           <React.Fragment key={pageNumber}>
@@ -345,7 +402,7 @@ function HomePage() {
   // Example:
   // ?page=2&q=accusamus
   const updateParams = useCallback(
-    (nextPage, nextFilter) => {
+    (nextPage: number, nextFilter: string) => {
       const params = new URLSearchParams();
       if (nextPage > 1) params.set("page", String(nextPage));
       if (nextFilter.trim()) params.set("q", nextFilter.trim());
@@ -364,7 +421,7 @@ function HomePage() {
 
   // Search button / form submit handler.
   // Resets page back to 1 whenever a new search is performed.
-  function onSearchSubmit(e) {
+  function onSearchSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     updateParams(1, searchInput);
   }
@@ -477,7 +534,7 @@ function HomePage() {
 }
 
 // Reusable metadata card for the detail page sidebar.
-function MetadataCard({ title, icon, children }) {
+function MetadataCard({ title, icon, children }: MetadataCardProps) {
   return (
     <Card>
       <div style={{ padding: 20 }}>

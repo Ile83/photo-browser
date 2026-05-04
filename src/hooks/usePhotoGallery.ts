@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
 import { fetchGalleryPage, getTotalPageCount } from "../api/photos";
 import { PHOTO_DATASET_SIZE } from "../api/jsonPlaceholder";
+import type { Photo } from "../types";
 
-function createGalleryState(filter, page, requestKey) {
+interface GalleryState {
+  requestKey: string;
+  photos: Photo[];
+  totalCount: number;
+  safePage: number;
+  loading: boolean;
+  error: string;
+}
+
+function createGalleryState(filter: string, page: number, requestKey: string): GalleryState {
   return {
     requestKey,
     photos: [],
@@ -13,9 +23,11 @@ function createGalleryState(filter, page, requestKey) {
   };
 }
 
-export function usePhotoGallery(page, filter) {
+export function usePhotoGallery(page: number, filter: string) {
   const requestKey = `${page}:${filter.trim().toLowerCase()}`;
-  const [state, setState] = useState(() => createGalleryState(filter, page, requestKey));
+  const [state, setState] = useState<GalleryState>(() =>
+    createGalleryState(filter, page, requestKey),
+  );
   const viewState =
     state.requestKey === requestKey ? state : createGalleryState(filter, page, requestKey);
 
